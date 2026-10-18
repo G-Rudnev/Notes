@@ -1,6 +1,6 @@
 {
-  "name": "Текст",
-  "short_name": "Текст",
+  "name": "Заметки",
+  "short_name": "Заметки",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#121212",
