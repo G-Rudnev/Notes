@@ -286,3 +286,16 @@
                     e.stopPropagation(); // Чтобы не сработал клик по самой заметке
                     
                     if (confirm('Удалить эту заметку?')) {
+const allNotes = getNotes();
+delete allNotes[note.id];
+saveNotes(allNotes);
+// Если удалили ту заметку, которая сейчас открыта на экране — чистим экран
+if (currentNoteId === note.id) {
+currentNoteId = null;
+localStorage.removeItem('zen_current_id');
+editor.value = '';
+}
+// Обновляем список на экране
+renderNotesList();
+}
+});
