@@ -4,166 +4,42 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Текст</title>
-    
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    
     <link rel="manifest" href="data:application/json,{%22name%22:%22Текст%22,%22short_name%22:%22Текст%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23121212%22}">
-
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-        body, html {
-            width: 100%;
-            height: 100vh;
-            height: -webkit-fill-available;
-            background-color: #121212;
-            color: #e0e0e0;
-            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-            overflow: hidden;
-        }
-        
-        #app-container {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            background-color: #121212;
-        }
-
-        #editor {
-            width: 100%;
-            flex-grow: 1;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: #e0e0e0;
-            font-size: 16px;
-            line-height: 1.5;
-            padding: calc(env(safe-area-inset-top) + 15px) 20px 80px 20px;
-            resize: none;
-            font-family: inherit;
-        }
-        .controls {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            display: flex;
-            gap: 8px;
-            z-index: 10;
-        }
-        .btn {
-            width: 36px;
-            height: 36px;
-            border-radius: 6px;
-            background-color: rgba(255, 255, 255, 0.08);
-            color: rgba(255, 255, 255, 0.4);
-            border: none;
-            font-size: 18px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            user-select: none;
-            font-family: inherit;
-        }
-        .btn:active {
-            background-color: rgba(255, 255, 255, 0.15);
-        }
-        #menu {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(18, 18, 18, 0.97);
-            z-index: 20;
-            padding: 30px 20px;
-            overflow-y: auto;
-        }
-        #menu h3 {
-            font-size: 16px;
-            margin-bottom: 20px;
-            color: rgba(255, 255, 255, 0.5);
-            font-weight: normal;
-        }
-        .menu-close {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 24px;
-            cursor: pointer;
-        }
-        
-        /* Строка заметки в списке */
-        .note-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .note-item {
-            flex-grow: 1;
-            padding: 14px;
-            cursor: pointer;
-            color: #e0e0e0;
-            font-size: 15px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .note-item:active {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-        
-        /* Кнопка удаления (крестик) */
-        .btn-delete {
-            padding: 14px 20px;
-            background: transparent;
-            border: none;
-            color: rgba(235, 87, 87, 0.4); /* Приглушенный красный цвет */
-            font-size: 18px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .btn-delete:active {
-            color: rgba(235, 87, 87, 1);
-            background-color: rgba(235, 87, 87, 0.05);
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body, html { width: 100%; height: 100vh; height: -webkit-fill-available; background-color: #121212; color: #e0e0e0; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace; overflow: hidden; }
+        #app-container { width: 100%; height: 100%; display: flex; flex-direction: column; background-color: #121212; }
+        #editor { width: 100%; flex-grow: 1; border: none; outline: none; background: transparent; color: #e0e0e0; font-size: 16px; line-height: 1.5; padding: calc(env(safe-area-inset-top) + 15px) 20px 80px 20px; resize: none; font-family: inherit; }
+        .controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 8px; z-index: 10; }
+        .btn { width: 36px; height: 36px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); border: none; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; font-family: inherit; }
+        .btn:active { background-color: rgba(255, 255, 255, 0.15); }
+        #menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(18, 18, 18, 0.97); z-index: 20; padding: 30px 20px; overflow-y: auto; }
+        #menu h3 { font-size: 16px; margin-bottom: 20px; color: rgba(255, 255, 255, 0.5); font-weight: normal; }
+        .menu-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); font-size: 24px; cursor: pointer; }
+        .note-row { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255, 255, 255, 0.05); }
+        .note-item { flex-grow: 1; padding: 14px; cursor: pointer; color: #e0e0e0; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .note-item:active { background-color: rgba(255, 255, 255, 0.05); }
+        .btn-delete { padding: 14px 20px; background: transparent; border: none; color: rgba(235, 87, 87, 0.4); font-size: 18px; cursor: pointer; user-select: none; }
+        .btn-delete:active { color: rgba(235, 87, 87, 1); background-color: rgba(235, 87, 87, 0.05); }
     </style>
 </head>
 <body>
-
     <div id="app-container">
-        <textarea id="editor" 
-                  placeholder="..." 
-                  autocomplete="off" 
-                  autocorrect="off" 
-                  autocapitalize="off" 
-                  spellcheck="false"
-                  enterkeyhint="enter"></textarea>
-
+        <textarea id="editor" placeholder="..." autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" enterkeyhint="enter"></textarea>
         <div class="controls">
             <button class="btn" id="btn-fullscreen" title="На весь экран">⛶</button>
             <button class="btn" id="btn-open" title="Открыть">☰</button>
             <button class="btn" id="btn-plus" title="Новый">+</button>
         </div>
     </div>
-
     <div id="menu">
         <button class="menu-close" id="btn-close-menu">×</button>
         <h3>ЗАМЕТКИ:</h3>
         <div id="notes-list"></div>
     </div>
-
     <script>
         const container = document.getElementById('app-container');
         const editor = document.getElementById('editor');
@@ -173,7 +49,6 @@
         const menu = document.getElementById('menu');
         const btnCloseMenu = document.getElementById('btn-close-menu');
         const notesList = document.getElementById('notes-list');
-
         let currentNoteId = localStorage.getItem('zen_current_id') || null;
 
         window.addEventListener('DOMContentLoaded', () => {
@@ -190,57 +65,34 @@
 
         btnFullscreen.addEventListener('click', () => {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                if (container.requestFullscreen) {
-                    container.requestFullscreen();
-                } else if (container.webkitRequestFullscreen) {
-                    container.webkitRequestFullscreen();
-                } else if (container.mozRequestFullScreen) {
-                    container.mozRequestFullScreen();
-                }
+                if (container.requestFullscreen) { container.requestFullscreen(); }
+                else if (container.webkitRequestFullscreen) { container.webkitRequestFullscreen(); }
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                } else if (document.webkitExitFullscreen) {
-                    document.webkitExitFullscreen();
-                }
+                if (document.exitFullscreen) { document.exitFullscreen(); }
+                else if (document.webkitExitFullscreen) { document.webkitExitFullscreen(); }
             }
             editor.focus();
         });
 
-        function getNotes() {
-            return JSON.parse(localStorage.getItem('zen_vault') || '{}');
-        }
-
-        function saveNotes(notes) {
-            localStorage.setItem('zen_vault', JSON.stringify(notes));
-        }
+        function getNotes() { return JSON.parse(localStorage.getItem('zen_vault') || '{}'); }
+        function saveNotes(notes) { localStorage.setItem('zen_vault', JSON.stringify(notes)); }
 
         editor.addEventListener('input', () => {
             const text = editor.value;
             if (!text.trim() && !currentNoteId) return;
-
             if (!currentNoteId) {
                 currentNoteId = 'note_' + Date.now();
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
-
             let title = text.trim().split('\n')[0] || 'Без названия';
             if (title.length > 40) title = title.substring(0, 40) + '...';
-
             const notes = getNotes();
-            notes[currentNoteId] = {
-                id: currentNoteId,
-                title: title,
-                text: text,
-                updated: Date.now()
-            };
-            
+            notes[currentNoteId] = { id: currentNoteId, title: title, text: text, updated: Date.now() };
             if (!text.trim()) {
                 delete notes[currentNoteId];
                 currentNoteId = null;
                 localStorage.removeItem('zen_current_id');
             }
-
             saveNotes(notes);
         });
 
@@ -251,21 +103,16 @@
             editor.focus();
         });
 
-        // Функция рендеринга списка заметок с кнопками удаления
         function renderNotesList() {
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
-
             if (notes.length === 0) {
                 notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут пока ничего нет</div>';
                 return;
             }
-
             notes.forEach(note => {
                 const row = document.createElement('div');
                 row.className = 'note-row';
-
-                // Название заметки (клик открывает её)
                 const item = document.createElement('div');
                 item.className = 'note-item';
                 item.textContent = note.title;
@@ -276,44 +123,36 @@
                     menu.style.display = 'none';
                     editor.focus();
                 });
-
-                // Кнопка удаления (крестик)
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'btn-delete';
                 deleteBtn.innerHTML = '×';
-                deleteBtn.title = 'Удалить';
                 deleteBtn.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Чтобы не сработал клик по самой заметке
-                    
+                    e.stopPropagation();
                     if (confirm('Удалить эту заметку?')) {
-const allNotes = getNotes();
-delete allNotes[note.id];
-saveNotes(allNotes);
-// Если удалили ту заметку, которая сейчас открыта на экране — чистим экран
-if (currentNoteId === note.id) {
-currentNoteId = null;
-localStorage.removeItem('zen_current_id');
-editor.value = '';
-}
-// Обновляем список на экране
-renderNotesList();
-}
-});
-row.appendChild(item);
-row.appendChild(deleteBtn);
-notesList.appendChild(row);
-});
-}
-btnOpen.addEventListener('click', () => {
-renderNotesList();
-menu.style.display = 'block';
-});
-btnCloseMenu.addEventListener('click', () => {
-menu.style.display = 'none';
-editor.focus();
-});
-window.addEventListener('resize', () => {
-if (document.activeElement === editor) {
-setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
-}
-});
+                        const allNotes = getNotes();
+                        delete allNotes[note.id];
+                        saveNotes(allNotes);
+                        if (currentNoteId === note.id) {
+                            currentNoteId = null;
+                            localStorage.removeItem('zen_current_id');
+                            editor.value = '';
+                        }
+                        renderNotesList();
+                    }
+                });
+                row.appendChild(item);
+                row.appendChild(deleteBtn);
+                notesList.appendChild(row);
+            });
+        }
+
+        btnOpen.addEventListener('click', () => { renderNotesList(); menu.style.display = 'block'; });
+        btnCloseMenu.addEventListener('click', () => { menu.style.display = 'none'; editor.focus(); });
+        window.addEventListener('resize', () => {
+            if (document.activeElement === editor) {
+                setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
+            }
+        });
+    </script>
+</body>
+</html>
