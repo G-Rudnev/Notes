@@ -63,7 +63,6 @@
             }
         });
 
-        // ПРИНУДИТЕЛЬНЫЙ ФУЛЛСКРИН С ВОЗВРАТОМ ФОКУСА
         btnFullscreen.addEventListener('click', () => {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
                 if (container.requestFullscreen) { container.requestFullscreen(); }
@@ -75,9 +74,8 @@
             editor.focus();
         });
 
-        // АВТОМАТИЧЕСКИЙ СБРОС КЛАВИАТУРЫ ПРИ ЛЮБОМ ПОВОРОТЕ ЭКРАНА
         window.addEventListener('orientationchange', () => {
-            editor.blur(); // Принудительно прячем клавиатуру до перерисовки экрана
+            editor.blur();
             setTimeout(() => {
                 window.scrollTo(0, 0);
                 document.body.style.height = '100%';
@@ -91,12 +89,18 @@
         editor.addEventListener('input', () => {
             const text = editor.value;
             if (!text.trim() && !currentNoteId) return;
+
             if (!currentNoteId) {
                 currentNoteId = 'note_' + Date.now();
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
-            let title = text.trim().split('\n') || 'Без названия';
+
+            const lines = text.trim().split('\n');
+            let title = (lines[0] || '').trim();
+            
+            if (!title) title = 'Без названия';
             if (title.length > 40) title = title.substring(0, 40) + '...';
+
             const notes = getNotes();
             notes[currentNoteId] = { id: currentNoteId, title: title, text: text, updated: Date.now() };
             if (!text.trim()) {
