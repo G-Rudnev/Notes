@@ -114,7 +114,7 @@
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
             if (notes.length === 0) {
-                notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут пока ничего нет</div>';
+                notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут ничего нет</div>';
                 return;
             }
             notes.forEach(note => {
