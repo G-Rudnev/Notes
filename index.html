@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Текст</title>
+    
+    <!-- Магия для скрытия адресной строки и запуска в режиме Fullscreen (PWA) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="display" content="standalone">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body, html {
+            width: 100%;
+            height: 100%;
+            background-color: #121212;
+            color: #e0e0e0;
+            /* Чистый системный моноширинный шрифт, как в редакторах кода */
+            font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            overflow: hidden;
+        }
+        /* Главное текстовое поле */
+        #editor {
+            width: 100%;
+            height: 100%;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: #e0e0e0;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 20px 20px 80px 20px;
+            resize: none;
+            font-family: inherit;
+        }
+        /* Контейнер для маленьких кнопок в углу */
+        .controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 8px;
+            z-index: 10;
+        }
+        /* Крошечные аскетичные кнопки */
+        .btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            background-color: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.4);
+            border: none;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            user-select: none;
+            font-family: inherit;
+        }
+        .btn:active {
+            background-color: rgba(255, 255, 255, 0.15);
+        }
+        /* Всплывающее меню со списком сохраненных заметок */
+        #menu {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(18, 18, 18, 0.95);
+            z-index: 20;
+            padding: 30px 20px;
+            overflow-y: auto;
+        }
+        #menu h3 {
+            font-size: 16px;
+            margin-bottom: 20px;
+            color: rgba(255, 255, 255, 0.5);
+            font-weight: normal;
+        }
+        .menu-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 24px;
+            cursor: pointer;
+        }
+        .note-item {
+            padding: 14px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            cursor: pointer;
+            color: #e0e0e0;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .note-item:active {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body>
+
+    <textarea id="editor" 
+              placeholder="..." 
+              autofocus
+              autocomplete="off" 
+              autocorrect="off" 
+              autocapitalize="off" 
+              spellcheck="false"
+              enterkeyhint="enter"></textarea>
+
+    <div class="controls">
+        <button class="btn" id="btn-open" title="Открыть">☰</button>
+        <button class="btn" id="btn-plus" title="Новый">+</button>
+    </div>
+
+    <div id="menu">
+        <button class="menu-close" id="btn-close-menu">×</button>
+        <h3>ЗАМЕТКИ:</h3>
+        <div id="notes-list"></div>
+    </div>
+
+    <script>
+        const editor = document.getElementById('editor');
+        const btnPlus = document.getElementById('btn-plus');
+        const btnOpen = document.getElementById('btn-open');
+        const menu = document.getElementById('menu');
+        const btnCloseMenu = document.getElementById('btn-close-menu');
+        const notesList = document.getElementById('notes-list');
+
+        // Текущий ID открытой заметки (если null — это новая несохраненная мысль)
+        let currentNoteId = localStorage.getItem('zen_current_id') || null;
+
+        // Загрузка при старте
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedNotes = getNotes();
+            
+            if (currentNoteId && savedNotes[currentNoteId]) {
+                editor.value = savedNotes[currentNoteId].text;
+            } else if (Object.keys(savedNotes).length > 0) {
+                // Если ID потерялся, но заметки есть — берем последнюю измененную
+                const sorted = Object.values(savedNotes).sort((a,b) => b.updated - a.updated);
+                currentNoteId = sorted[0].id;
+                editor.value = sorted[0].text;
+                localStorage.setItem('zen_current_id', currentNoteId);
+            }
+            editor.focus();
+        });
+
+        // Получение всех заметок из LocalStorage
+        function getNotes() {
+            return JSON.parse(localStorage.getItem('zen_vault') || '{}');
+        }
+
+        // Сохранение заметок в LocalStorage
+        function saveNotes(notes) {
+            localStorage.setItem('zen_vault', JSON.stringify(notes));
+        }
+
+        // Моментальное автосохранение при вводе текста
+        editor.addEventListener('input', () => {
+            const text = editor.value;
+            if (!text.trim() && !currentNoteId) return;
+
+            // Если это совершенно новый текст — генерируем ему ID
+            if (!currentNoteId) {
+                currentNoteId = 'note_' + Date.now();
+                localStorage.setItem('zen_current_id', currentNoteId);
+            }
+
+            // Вытаскиваем первую строчку для названия (максимум 40 символов)
+            let title = text.trim().split('\n')[0] || 'Без названия';
+            if (title.length > 40) title = title.substring(0, 40) + '...';
+
+            const notes = getNotes();
+            notes[currentNoteId] = {
+                id: currentNoteId,
+                title: title,
+                text: text,
+                updated: Date.now()
+            };
+            
+            // Если текст стерли полностью, удаляем пустую заметку из базы
+            if (!text.trim()) {
+                delete notes[currentNoteId];
+                currentNoteId = null;
+                localStorage.removeItem('zen_current_id');
+            }
+
+            saveNotes(notes);
+        });
+
+        // Кнопка ПЛЮС (Новый чистый лист)
+        btnPlus.addEventListener('click', () => {
+            currentNoteId = null;
+            localStorage.removeItem('zen_current_id');
+            editor.value = '';
+            editor.focus();
+        });
+
+        // Кнопка ОТКРЫТЬ (Показ списка заметок)
+        btnOpen.addEventListener('click', () => {
+            notesList.innerHTML = '';
+            const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
+
+            if (notes.length === 0) {
+                notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут пока ничего нет</div>';
+            }
+
+            notes.forEach(note => {
+                const item = document.createElement('div');
+                item.className = 'note-item';
+                item.textContent = note.title;
+                item.addEventListener('click', () => {
+                    currentNoteId = note.id;
+                    localStorage.setItem('zen_current_id', currentNoteId);
+                    editor.value = note.text;
+                    menu.style.display = 'none';
+                    editor.focus();
+                });
+                notesList.appendChild(item);
+            });
+
+            menu.style.display = 'block';
+        });
+
+        // Закрыть меню списка
+        btnCloseMenu.addEventListener('click', () => {
+            menu.style.display = 'none';
+            editor.focus();
+        });
+
+        // Фикс прыжков интерфейса при повороте экрана
+        window.addEventListener('resize', () => {
+            if (document.activeElement === editor) {
+                setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
+            }
+        });
+    </script>
+</body>
+</html>
