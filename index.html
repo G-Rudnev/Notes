@@ -2,9 +2,8 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <!-- interactive-widget=resizes-content — это лечащая магия против черных полос и для автоскрытия строки адреса -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
-    <title>Мои заметки</title>
+    <title>Текст</title>
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
@@ -12,16 +11,11 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { width: 100%; height: 100%; background-color: #121212; color: #e0e0e0; font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, monospace; overflow: hidden; }
-        
         #app-container { width: 100%; height: 100%; display: flex; flex-direction: column; background-color: #121212; position: relative; }
-        
-        /* padding-bottom: 90px гарантирует, что текст не скроется за кнопками */
         #editor { width: 100%; flex-grow: 1; border: none; outline: none; background: transparent; color: #e0e0e0; font-size: 16px; line-height: 1.5; padding: calc(env(safe-area-inset-top) + 15px) 20px 90px 20px; resize: none; font-family: inherit; overflow-y: auto; -webkit-overflow-scrolling: touch; }
-        
         .controls { position: fixed; bottom: 20px; right: 20px; display: flex; gap: 8px; z-index: 10; }
         .btn { width: 36px; height: 36px; border-radius: 6px; background-color: rgba(255, 255, 255, 0.08); color: rgba(255, 255, 255, 0.4); border: none; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; user-select: none; font-family: inherit; }
         .btn:active { background-color: rgba(255, 255, 255, 0.15); }
-        
         #menu { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(18, 18, 18, 0.97); z-index: 20; padding: 30px 20px; overflow-y: auto; }
         #menu h3 { font-size: 16px; margin-bottom: 20px; color: rgba(255, 255, 255, 0.5); font-weight: normal; }
         .menu-close { position: absolute; top: 20px; right: 20px; background: transparent; border: none; color: rgba(255, 255, 255, 0.4); font-size: 24px; cursor: pointer; }
@@ -46,6 +40,16 @@
         <div id="notes-list"></div>
     </div>
     <script>
+        // МАГИЯ ПРОТИВ БЛОКИРОВКИ УСТАНОВКИ: Генерируем Сервисный Воркер прямо на месте
+        if ('serviceWorker' in navigator) {
+            const swBlob = new Blob([`
+                self.addEventListener('install', (e) => self.skipWaiting());
+                self.addEventListener('fetch', (e) => e.respondWith(fetch(e.request)));
+            `], { type: 'application/javascript' });
+            const swUrl = URL.createObjectURL(swBlob);
+            navigator.serviceWorker.register(swUrl).catch(() => {});
+        }
+
         const container = document.getElementById('app-container');
         const editor = document.getElementById('editor');
         const btnPlus = document.getElementById('btn-plus');
@@ -61,18 +65,12 @@
                 editor.value = savedNotes[currentNoteId].text;
             } else if (Object.keys(savedNotes).length > 0) {
                 const sorted = Object.values(savedNotes).sort((a,b) => b.updated - a.updated);
-                currentNoteId = sorted[0].id;
-                editor.value = sorted[0].text;
+                currentNoteId = sorted.id;
+                editor.value = sorted.text;
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
         });
 
-        // Жесткий скролл-хак для скрытия адресной строки при тапе
-        editor.addEventListener('focus', () => {
-            setTimeout(() => { window.scrollTo(0, 1); }, 100);
-        });
-
-        // Принудительный сброс геометрии при смене ориентации экрана
         window.addEventListener('orientationchange', () => {
             setTimeout(() => {
                 window.scrollTo(0, 0);
@@ -91,7 +89,7 @@
                 currentNoteId = 'note_' + Date.now();
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
-            let title = text.trim().split('\n')[0] || 'Без названия';
+            let title = text.trim().split('\n') || 'Без названия';
             if (title.length > 40) title = title.substring(0, 40) + '...';
             const notes = getNotes();
             notes[currentNoteId] = { id: currentNoteId, title: title, text: text, updated: Date.now() };
@@ -114,7 +112,7 @@
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
             if (notes.length === 0) {
-                notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут ничего нет</div>';
+                notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут пока ничего нет</div>';
                 return;
             }
             notes.forEach(note => {
