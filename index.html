@@ -5,11 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Текст</title>
     
-    <!-- Магия для скрытия адресной строки и запуска в режиме Fullscreen (PWA) -->
+    <!-- Инструкции для телефона запустить страницу как полноценное приложение без рамок -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="display" content="standalone">
+    
+    <!-- Автоматический манифест безопасности, чтобы активировать полноэкранный режим -->
+    <link rel="manifest" href="data:application/json,{%22name%22:%22Текст%22,%22short_name%22:%22Текст%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23121212%22}">
 
     <style>
         * {
@@ -22,7 +25,6 @@
             height: 100%;
             background-color: #121212;
             color: #e0e0e0;
-            /* Чистый системный моноширинный шрифт, как в редакторах кода */
             font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             overflow: hidden;
         }
@@ -116,7 +118,6 @@
 
     <textarea id="editor" 
               placeholder="..." 
-              autofocus
               autocomplete="off" 
               autocorrect="off" 
               autocapitalize="off" 
@@ -142,47 +143,47 @@
         const btnCloseMenu = document.getElementById('btn-close-menu');
         const notesList = document.getElementById('notes-list');
 
-        // Текущий ID открытой заметки (если null — это новая несохраненная мысль)
         let currentNoteId = localStorage.getItem('zen_current_id') || null;
 
-        // Загрузка при старте
+        // Загрузка сохраненного при старте
         window.addEventListener('DOMContentLoaded', () => {
             const savedNotes = getNotes();
-            
             if (currentNoteId && savedNotes[currentNoteId]) {
                 editor.value = savedNotes[currentNoteId].text;
             } else if (Object.keys(savedNotes).length > 0) {
-                // Если ID потерялся, но заметки есть — берем последнюю измененную
                 const sorted = Object.values(savedNotes).sort((a,b) => b.updated - a.updated);
                 currentNoteId = sorted[0].id;
                 editor.value = sorted[0].text;
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
-            editor.focus();
         });
 
-        // Получение всех заметок из LocalStorage
+        // ПРИНУДИТЕЛЬНЫЙ ПОЛНЫЙ ЭКРАН ПРИ КЛИКЕ НА ЛИСТ
+        // Как только вы нажмете на текстовое поле, браузер спрячет адресную строку намертво
+        editor.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+        });
+
         function getNotes() {
             return JSON.parse(localStorage.getItem('zen_vault') || '{}');
         }
 
-        // Сохранение заметок в LocalStorage
         function saveNotes(notes) {
             localStorage.setItem('zen_vault', JSON.stringify(notes));
         }
 
-        // Моментальное автосохранение при вводе текста
+        // Автосохранение и генерация имени по первой строчке
         editor.addEventListener('input', () => {
             const text = editor.value;
             if (!text.trim() && !currentNoteId) return;
 
-            // Если это совершенно новый текст — генерируем ему ID
             if (!currentNoteId) {
                 currentNoteId = 'note_' + Date.now();
                 localStorage.setItem('zen_current_id', currentNoteId);
             }
 
-            // Вытаскиваем первую строчку для названия (максимум 40 символов)
             let title = text.trim().split('\n')[0] || 'Без названия';
             if (title.length > 40) title = title.substring(0, 40) + '...';
 
@@ -194,7 +195,6 @@
                 updated: Date.now()
             };
             
-            // Если текст стерли полностью, удаляем пустую заметку из базы
             if (!text.trim()) {
                 delete notes[currentNoteId];
                 currentNoteId = null;
@@ -204,7 +204,7 @@
             saveNotes(notes);
         });
 
-        // Кнопка ПЛЮС (Новый чистый лист)
+        // Кнопка ПЛЮС
         btnPlus.addEventListener('click', () => {
             currentNoteId = null;
             localStorage.removeItem('zen_current_id');
@@ -212,7 +212,7 @@
             editor.focus();
         });
 
-        // Кнопка ОТКРЫТЬ (Показ списка заметок)
+        // Кнопка ОТКРЫТЬ (Меню)
         btnOpen.addEventListener('click', () => {
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
@@ -238,13 +238,12 @@
             menu.style.display = 'block';
         });
 
-        // Закрыть меню списка
         btnCloseMenu.addEventListener('click', () => {
             menu.style.display = 'none';
             editor.focus();
         });
 
-        // Фикс прыжков интерфейса при повороте экрана
+        // Фикс прокрутки при повороте экрана
         window.addEventListener('resize', () => {
             if (document.activeElement === editor) {
                 setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
