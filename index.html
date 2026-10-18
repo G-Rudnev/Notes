@@ -148,11 +148,6 @@
 
         btnOpen.addEventListener('click', () => { renderNotesList(); menu.style.display = 'block'; });
         btnCloseMenu.addEventListener('click', () => { menu.style.display = 'none'; editor.focus(); });
-        window.addEventListener('resize', () => {
-            if (document.activeElement === editor) {
-                setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
-            }
-        });
     </script>
 </body>
 </html>
