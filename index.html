@@ -5,13 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Текст</title>
     
-    <!-- Инструкции для телефона запустить страницу как полноценное приложение без рамок -->
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
-    <meta name="display" content="standalone">
     
-    <!-- Автоматический манифест безопасности, чтобы активировать полноэкранный режим -->
     <link rel="manifest" href="data:application/json,{%22name%22:%22Текст%22,%22short_name%22:%22Текст%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22background_color%22:%22%23121212%22}">
 
     <style>
@@ -22,27 +19,38 @@
         }
         body, html {
             width: 100%;
-            height: 100%;
+            /* Использование динамической высоты, чтобы компенсировать адресную строку */
+            height: 100vh;
+            height: -webkit-fill-available;
             background-color: #121212;
             color: #e0e0e0;
             font-family: ui-monospace, SFMono-Regular, SF Mono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             overflow: hidden;
         }
-        /* Главное текстовое поле */
-        #editor {
+        
+        /* Контейнер, который мы будем разворачивать на весь экран */
+        #app-container {
             width: 100%;
             height: 100%;
+            display: flex;
+            flex-direction: column;
+            background-color: #121212;
+        }
+
+        #editor {
+            width: 100%;
+            flex-grow: 1;
             border: none;
             outline: none;
             background: transparent;
             color: #e0e0e0;
             font-size: 16px;
             line-height: 1.5;
-            padding: 20px 20px 80px 20px;
+            /* Отступы с учетом безопасных зон краев экрана (челок/вырезов) */
+            padding: calc(env(safe-area-inset-top) + 15px) 20px 80px 20px;
             resize: none;
             font-family: inherit;
         }
-        /* Контейнер для маленьких кнопок в углу */
         .controls {
             position: fixed;
             bottom: 20px;
@@ -51,7 +59,6 @@
             gap: 8px;
             z-index: 10;
         }
-        /* Крошечные аскетичные кнопки */
         .btn {
             width: 36px;
             height: 36px;
@@ -70,7 +77,6 @@
         .btn:active {
             background-color: rgba(255, 255, 255, 0.15);
         }
-        /* Всплывающее меню со списком сохраненных заметок */
         #menu {
             display: none;
             position: fixed;
@@ -78,7 +84,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: rgba(18, 18, 18, 0.95);
+            background-color: rgba(18, 18, 18, 0.97);
             z-index: 20;
             padding: 30px 20px;
             overflow-y: auto;
@@ -116,17 +122,21 @@
 </head>
 <body>
 
-    <textarea id="editor" 
-              placeholder="..." 
-              autocomplete="off" 
-              autocorrect="off" 
-              autocapitalize="off" 
-              spellcheck="false"
-              enterkeyhint="enter"></textarea>
+    <div id="app-container">
+        <textarea id="editor" 
+                  placeholder="..." 
+                  autocomplete="off" 
+                  autocorrect="off" 
+                  autocapitalize="off" 
+                  spellcheck="false"
+                  enterkeyhint="enter"></textarea>
 
-    <div class="controls">
-        <button class="btn" id="btn-open" title="Открыть">☰</button>
-        <button class="btn" id="btn-plus" title="Новый">+</button>
+        <div class="controls">
+            <!-- Добавлена честная кнопка переключения фуллскрина -->
+            <button class="btn" id="btn-fullscreen" title="На весь экран">⛶</button>
+            <button class="btn" id="btn-open" title="Открыть">☰</button>
+            <button class="btn" id="btn-plus" title="Новый">+</button>
+        </div>
     </div>
 
     <div id="menu">
@@ -136,16 +146,17 @@
     </div>
 
     <script>
+        const container = document.getElementById('app-container');
         const editor = document.getElementById('editor');
         const btnPlus = document.getElementById('btn-plus');
         const btnOpen = document.getElementById('btn-open');
+        const btnFullscreen = document.getElementById('btn-fullscreen');
         const menu = document.getElementById('menu');
         const btnCloseMenu = document.getElementById('btn-close-menu');
         const notesList = document.getElementById('notes-list');
 
         let currentNoteId = localStorage.getItem('zen_current_id') || null;
 
-        // Загрузка сохраненного при старте
         window.addEventListener('DOMContentLoaded', () => {
             const savedNotes = getNotes();
             if (currentNoteId && savedNotes[currentNoteId]) {
@@ -158,12 +169,25 @@
             }
         });
 
-        // ПРИНУДИТЕЛЬНЫЙ ПОЛНЫЙ ЭКРАН ПРИ КЛИКЕ НА ЛИСТ
-        // Как только вы нажмете на текстовое поле, браузер спрячет адресную строку намертво
-        editor.addEventListener('click', () => {
-            if (!document.fullscreenElement) {
-                document.documentElement.requestFullscreen().catch(() => {});
+        // УЛЬТИМАТИВНЫЙ ФУЛЛСКРИН ЧЕРЕЗ ВЫДЕЛЕННУЮ КНОПКУ (Обход запретов Chrome)
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+                // Пробуем стандартный метод и все вендорные альтернативы
+                if (container.requestFullscreen) {
+                    container.requestFullscreen();
+                } else if (container.webkitRequestFullscreen) {
+                    container.webkitRequestFullscreen();
+                } else if (container.mozRequestFullScreen) {
+                    container.mozRequestFullScreen();
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                } else if (document.webkitExitFullscreen) {
+                    document.webkitExitFullscreen();
+                }
             }
+            editor.focus();
         });
 
         function getNotes() {
@@ -174,7 +198,6 @@
             localStorage.setItem('zen_vault', JSON.stringify(notes));
         }
 
-        // Автосохранение и генерация имени по первой строчке
         editor.addEventListener('input', () => {
             const text = editor.value;
             if (!text.trim() && !currentNoteId) return;
@@ -204,7 +227,6 @@
             saveNotes(notes);
         });
 
-        // Кнопка ПЛЮС
         btnPlus.addEventListener('click', () => {
             currentNoteId = null;
             localStorage.removeItem('zen_current_id');
@@ -212,7 +234,6 @@
             editor.focus();
         });
 
-        // Кнопка ОТКРЫТЬ (Меню)
         btnOpen.addEventListener('click', () => {
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
@@ -243,7 +264,6 @@
             editor.focus();
         });
 
-        // Фикс прокрутки при повороте экрана
         window.addEventListener('resize', () => {
             if (document.activeElement === editor) {
                 setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
