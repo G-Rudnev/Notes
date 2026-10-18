@@ -19,7 +19,6 @@
         }
         body, html {
             width: 100%;
-            /* Использование динамической высоты, чтобы компенсировать адресную строку */
             height: 100vh;
             height: -webkit-fill-available;
             background-color: #121212;
@@ -28,7 +27,6 @@
             overflow: hidden;
         }
         
-        /* Контейнер, который мы будем разворачивать на весь экран */
         #app-container {
             width: 100%;
             height: 100%;
@@ -46,7 +44,6 @@
             color: #e0e0e0;
             font-size: 16px;
             line-height: 1.5;
-            /* Отступы с учетом безопасных зон краев экрана (челок/вырезов) */
             padding: calc(env(safe-area-inset-top) + 15px) 20px 80px 20px;
             resize: none;
             font-family: inherit;
@@ -105,9 +102,17 @@
             font-size: 24px;
             cursor: pointer;
         }
-        .note-item {
-            padding: 14px;
+        
+        /* Строка заметки в списке */
+        .note-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .note-item {
+            flex-grow: 1;
+            padding: 14px;
             cursor: pointer;
             color: #e0e0e0;
             font-size: 15px;
@@ -117,6 +122,21 @@
         }
         .note-item:active {
             background-color: rgba(255, 255, 255, 0.05);
+        }
+        
+        /* Кнопка удаления (крестик) */
+        .btn-delete {
+            padding: 14px 20px;
+            background: transparent;
+            border: none;
+            color: rgba(235, 87, 87, 0.4); /* Приглушенный красный цвет */
+            font-size: 18px;
+            cursor: pointer;
+            user-select: none;
+        }
+        .btn-delete:active {
+            color: rgba(235, 87, 87, 1);
+            background-color: rgba(235, 87, 87, 0.05);
         }
     </style>
 </head>
@@ -132,7 +152,6 @@
                   enterkeyhint="enter"></textarea>
 
         <div class="controls">
-            <!-- Добавлена честная кнопка переключения фуллскрина -->
             <button class="btn" id="btn-fullscreen" title="На весь экран">⛶</button>
             <button class="btn" id="btn-open" title="Открыть">☰</button>
             <button class="btn" id="btn-plus" title="Новый">+</button>
@@ -169,10 +188,8 @@
             }
         });
 
-        // УЛЬТИМАТИВНЫЙ ФУЛЛСКРИН ЧЕРЕЗ ВЫДЕЛЕННУЮ КНОПКУ (Обход запретов Chrome)
         btnFullscreen.addEventListener('click', () => {
             if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-                // Пробуем стандартный метод и все вендорные альтернативы
                 if (container.requestFullscreen) {
                     container.requestFullscreen();
                 } else if (container.webkitRequestFullscreen) {
@@ -234,15 +251,21 @@
             editor.focus();
         });
 
-        btnOpen.addEventListener('click', () => {
+        // Функция рендеринга списка заметок с кнопками удаления
+        function renderNotesList() {
             notesList.innerHTML = '';
             const notes = Object.values(getNotes()).sort((a, b) => b.updated - a.updated);
 
             if (notes.length === 0) {
                 notesList.innerHTML = '<div style="color:rgba(255,255,255,0.2); padding:14px;">Тут пока ничего нет</div>';
+                return;
             }
 
             notes.forEach(note => {
+                const row = document.createElement('div');
+                row.className = 'note-row';
+
+                // Название заметки (клик открывает её)
                 const item = document.createElement('div');
                 item.className = 'note-item';
                 item.textContent = note.title;
@@ -253,22 +276,13 @@
                     menu.style.display = 'none';
                     editor.focus();
                 });
-                notesList.appendChild(item);
-            });
 
-            menu.style.display = 'block';
-        });
-
-        btnCloseMenu.addEventListener('click', () => {
-            menu.style.display = 'none';
-            editor.focus();
-        });
-
-        window.addEventListener('resize', () => {
-            if (document.activeElement === editor) {
-                setTimeout(() => { editor.scrollIntoView({ block: "end" }); }, 50);
-            }
-        });
-    </script>
-</body>
-</html>
+                // Кнопка удаления (крестик)
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'btn-delete';
+                deleteBtn.innerHTML = '×';
+                deleteBtn.title = 'Удалить';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Чтобы не сработал клик по самой заметке
+                    
+                    if (confirm('Удалить эту заметку?')) {
